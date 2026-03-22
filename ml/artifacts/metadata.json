@@ -1,0 +1,18 @@
+{
+  "version": "v1.0",
+  "feature_list": [
+    "longitude",
+    "latitude",
+    "housing_median_age",
+    "total_rooms",
+    "total_bedrooms",
+    "population",
+    "households",
+    "median_income",
+    "ocean_proximity"
+  ],
+  "rmse": 47015.44394017284,
+  "mae": 30806.77900678294,
+  "r2": 0.8303977209154784,
+  "trained_at": "2026-03-22T17:07:57.020265+00:00"
+}
