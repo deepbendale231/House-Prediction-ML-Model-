@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import os
 
 from dotenv import load_dotenv
@@ -7,6 +8,7 @@ from supabase import Client, create_client
 
 
 _SUPABASE: Client | None = None
+logger = logging.getLogger(__name__)
 
 
 def get_supabase() -> Client:
@@ -16,13 +18,21 @@ def get_supabase() -> Client:
         return _SUPABASE
 
     load_dotenv()
-    url = os.getenv("SUPABASE_URL")
-    key = os.getenv("SUPABASE_KEY")
-
-    if not url or not key:
+    try:
+        url = os.environ["SUPABASE_URL"]
+        key = os.environ["SUPABASE_SERVICE_ROLE_KEY"]
+    except KeyError as exc:
+        missing_key = exc.args[0]
+        logger.exception("Missing required environment variable: %s", missing_key)
         raise RuntimeError(
-            "SUPABASE_URL and SUPABASE_KEY must be set in environment variables."
-        )
+            f"Missing required environment variable: {missing_key}. "
+            "Set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in deployment settings."
+        ) from exc
 
-    _SUPABASE = create_client(url, key)
+    try:
+        _SUPABASE = create_client(url, key)
+    except Exception as exc:
+        logger.exception("Failed to initialize Supabase client")
+        raise RuntimeError("Failed to initialize Supabase client.") from exc
+
     return _SUPABASE

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from datetime import datetime, timezone
 from uuid import uuid4
 
@@ -12,6 +13,7 @@ from api.schemas import PredictionInput, PredictionOutput
 
 
 router = APIRouter(tags=["predict"])
+logger = logging.getLogger(__name__)
 
 
 @router.post("/predict", response_model=PredictionOutput)
@@ -27,7 +29,8 @@ def predict(payload: PredictionInput) -> PredictionOutput:
         transformed = pipeline.transform(feature_df)
         predicted_price = round(float(model.predict(transformed)[0]), 2)
     except Exception as exc:
-        raise HTTPException(status_code=500, detail=f"Inference failed: {exc}") from exc
+        logger.exception("Inference failed during /api/v1/predict")
+        raise HTTPException(status_code=500, detail="Inference failed.") from exc
 
     created_at = datetime.now(timezone.utc).isoformat()
     model_version = str(metadata.get("version", "unknown"))
@@ -49,7 +52,8 @@ def predict(payload: PredictionInput) -> PredictionOutput:
         inserted = (response.data or [{}])[0]
         prediction_id = str(inserted.get("id", uuid4()))
     except Exception as exc:
-        raise HTTPException(status_code=500, detail=f"Database insert failed: {exc}") from exc
+        logger.exception("Database insert failed during /api/v1/predict")
+        raise HTTPException(status_code=500, detail="Database insert failed.") from exc
 
     return PredictionOutput(
         predicted_price=predicted_price,
