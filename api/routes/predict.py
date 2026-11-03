@@ -51,9 +51,10 @@ def predict(payload: PredictionInput) -> PredictionOutput:
         )
         inserted = (response.data or [{}])[0]
         prediction_id = str(inserted.get("id", uuid4()))
-    except Exception as exc:
-        logger.exception("Database insert failed during /api/v1/predict")
-        raise HTTPException(status_code=500, detail="Database insert failed.") from exc
+    except Exception:
+        # History is a side feature: still return the price if the save fails.
+        logger.exception("Database insert failed during /api/v1/predict; returning prediction unsaved")
+        prediction_id = str(uuid4())
 
     return PredictionOutput(
         predicted_price=predicted_price,
