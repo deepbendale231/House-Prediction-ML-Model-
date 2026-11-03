@@ -115,7 +115,7 @@ Create the `predictions` table with `supabase_schema.sql`. The frontend reads th
 
 ## Limitations
 
-- **No hosted demo yet.** Deploy configs are included (`railway.json`, `vercel.json`) but no public URL is linked here.
+- **No public demo linked.** Deploy configs are included (`railway.json`, `vercel.json`). The deployed frontend currently returns an error because saving to the database fails, so it is not linked until that is fixed.
 - **A database outage fails the prediction.** The API saves each prediction to Supabase and returns an error if the save fails, so the model result is lost with it.
 - **One classic dataset.** California district medians from 1990, so prices are far below today's market. It demonstrates the pipeline, not current valuations.
 - **CI only compiles the backend.** There are no unit tests yet.
