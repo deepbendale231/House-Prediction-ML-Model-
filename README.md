@@ -1,78 +1,76 @@
+<div align="center">
+
 # HouseIQ
 
-![Railway](https://img.shields.io/badge/Railway-Backend-black?style=flat-square&logo=railway) ![Vercel](https://img.shields.io/badge/Vercel-Frontend-black?style=flat-square&logo=vercel) ![Supabase](https://img.shields.io/badge/Supabase-Database-black?style=flat-square&logo=supabase)
+**Predict California house prices from a few property details, and keep a history of every prediction.**<br>
+scikit-learn model, FastAPI service, Next.js frontend and Supabase storage.
 
-Predict California house prices in milliseconds. Built with RandomForest ML, FastAPI, Next.js, and Supabase.
+![Python](https://img.shields.io/badge/Python-3.11-3776AB?logo=python&logoColor=white)
+![FastAPI](https://img.shields.io/badge/FastAPI-API-009688?logo=fastapi&logoColor=white)
+![Next.js](https://img.shields.io/badge/Next.js-14-000000?logo=nextdotjs&logoColor=white)
+![scikit-learn](https://img.shields.io/badge/scikit--learn-RandomForest-F7931E?logo=scikitlearn&logoColor=white)
+![Supabase](https://img.shields.io/badge/Supabase-Postgres-3ECF8E?logo=supabase&logoColor=white)
+![CI](https://github.com/deepbendale231/House-Prediction-ML-Model-/actions/workflows/ci.yml/badge.svg)
 
----
+[**Model**](#model) · [**How it works**](#how-it-works) · [**Run it**](#run-it) · [**API**](#api) · [**Deploy**](#deploy)
 
-> Add a screenshot here after deployment
+| Training rows | R² | RMSE | MAE | Inputs |
+|:---:|:---:|:---:|:---:|:---:|
+| **20,640** | **0.830** | **$47,015** | **$30,807** | **9 features** |
 
----
+</div>
 
-## Stack
+## Model
 
-| Layer | Technology |
-|---|---|
-| Frontend | Next.js 14 + TypeScript + Tailwind + Framer Motion |
-| Backend | FastAPI + Uvicorn |
-| ML Model | scikit-learn RandomForestRegressor |
-| Database | Supabase (PostgreSQL) |
-| Backend Deploy | Railway (Docker) |
-| Frontend Deploy | Vercel |
+A RandomForest regressor inside a scikit-learn preprocessing pipeline, trained on the California housing dataset (20,640 districts). Metrics are read from the committed `ml/artifacts/metadata.json` (model `v1.0`).
 
----
+On average the prediction is within about **$31K** of the true median house value (MAE), with larger misses on expensive districts pulling the RMSE to $47K. Inputs: longitude, latitude, housing median age, total rooms, total bedrooms, population, households, median income and ocean proximity.
 
-## Architecture
+## How it works
 
-```text
-Browser
-  -> Vercel (Next.js)
-  -> Railway (FastAPI + ML artifacts)
-  -> Supabase
+```mermaid
+flowchart LR
+    B[Browser<br/>Next.js on Vercel] -->|POST /api/v1/predict| A[FastAPI on Railway]
+    A --> P[Pipeline + RandomForest<br/>ml/artifacts]
+    A -->|save prediction| S[(Supabase Postgres)]
+    B -->|GET /api/v1/predictions| A
 ```
 
----
+The web app has three pages: **Predict** (a form with an animated price result), **History** (every saved prediction) and **Model** (version and metrics).
 
-## Quickstart
+<details>
+<summary><b>Example request</b></summary>
 
-1. Clone repo
 ```bash
-git clone https://github.com/deepbendale231/House-Prediction-ML-Model-.git && cd House-Prediction-ML-Model-
+curl -s localhost:8000/api/v1/predict -H 'content-type: application/json' -d '{
+  "longitude": -122.23, "latitude": 37.88, "housing_median_age": 41,
+  "total_rooms": 880, "total_bedrooms": 129, "population": 322,
+  "households": 126, "median_income": 8.3252, "ocean_proximity": "NEAR BAY"
+}'
 ```
 
-2. Create virtual environment and activate
+Response fields: `predicted_price`, `prediction_id`, `model_version`, `created_at`.
+
+</details>
+
+## Run it
+
 ```bash
+git clone https://github.com/deepbendale231/House-Prediction-ML-Model-.git
+cd House-Prediction-ML-Model-
+
+# backend
 python3 -m venv .venv && source .venv/bin/activate
-```
-
-3. Install backend dependencies
-```bash
 pip install -r requirements.txt
-```
-
-4. Configure backend environment
-```bash
-cp .env.example .env
-```
-Fill `SUPABASE_URL` and `SUPABASE_KEY` in `.env`.
-
-5. Train model and generate artifacts
-```bash
-python -m ml.train --data-path data/housing.csv --output-dir ml/artifacts
-```
-
-6. Start backend API
-```bash
+cp .env.example .env          # set SUPABASE_URL and SUPABASE_KEY
+python -m ml.train --data-path data/housing.csv --output-dir ml/artifacts   # optional: artifacts are committed
 uvicorn api.main:app --reload --port 8000
+
+# frontend (Next.js app is at the repository root)
+npm install && npm run dev
 ```
 
-7. Start frontend
-```bash
-cd frontend && npm install && npm run dev
-```
-
----
+Create the `predictions` table with `supabase_schema.sql`. The frontend reads the API address from `NEXT_PUBLIC_API_URL`.
 
 ## API
 
@@ -114,5 +112,12 @@ cd frontend && npm install && npm run dev
 | NEXT_PUBLIC_API_URL | Yes | Frontend | https://houseiq.up.railway.app |
 
 ---
+
+## Limitations
+
+- **No hosted demo yet.** Deploy configs are included (`railway.json`, `vercel.json`) but no public URL is linked here.
+- **A database outage fails the prediction.** The API saves each prediction to Supabase and returns an error if the save fails, so the model result is lost with it.
+- **One classic dataset.** California district medians from 1990, so prices are far below today's market. It demonstrates the pipeline, not current valuations.
+- **CI only compiles the backend.** There are no unit tests yet.
 
 MIT License · Built by Deep Bendale
