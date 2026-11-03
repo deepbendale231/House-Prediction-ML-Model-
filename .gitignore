@@ -14,3 +14,7 @@ node_modules/
 notebooks/
 .ipynb_checkpoints/
 *.log
+
+__pycache__/
+*.pyc
+.streamlit/secrets.toml
